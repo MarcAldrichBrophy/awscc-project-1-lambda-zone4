@@ -26,7 +26,7 @@ def lambda_handler(event, context):
     path = event['path']
 
     if httpMethod == getMethod and path == healthPath:
-        response = buildResponse(200)
+        response = healthResponse(200)
     elif httpMethod == getMethod and path == rekogPath:
         response = rekogResponse(200)
     elif httpMethod == getMethod and path == comprehendPath:
@@ -40,16 +40,13 @@ def lambda_handler(event, context):
 
 # Response builder.
 def buildResponse(statusCode, body = None):
-    id = 'health'
-    increment_value = 1
-
-    # Update the numericAttribute using an update expression.
-    response = table.update_item(
-        Key={'id': id},
-        UpdateExpression='SET numericAttribute = numericAttribute + :val',
-        ExpressionAttributeValues={':val': increment_value}
-    )
-    
+    response = {
+        'statusCode': statusCode,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+    }
     if body is not None:
         response['body'] = json.dumps(body, cls = CustomEncoder)
     return response
@@ -79,6 +76,18 @@ def comprehendResponse(statusCode, body = None):
     return response
 
 def transcribeResponse(statusCode, body = None):
+    response = {
+        'statusCode': statusCode,
+        'headers': {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*'
+        }
+    }
+    if body is not None:
+        response['body'] = json.dumps(body, cls = CustomEncoder)
+    return response
+
+def healthResponse(statusCode, body = None):
     response = {
         'statusCode': statusCode,
         'headers': {
