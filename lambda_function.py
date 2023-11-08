@@ -6,7 +6,8 @@ logger = logging.getLogger()
 logger.setLevel(logging.INFO)
 
 getMethod = "GET"
-healthPath = "/health"
+dataPath = "/data"
+healthPath = dataPath + "/health"
 
 #main handler
 def lambda_handler(event, context):
