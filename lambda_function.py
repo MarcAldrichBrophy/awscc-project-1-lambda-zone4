@@ -26,7 +26,7 @@ def lambda_handler(event, context):
     path = event['path']
 
     if httpMethod == getMethod and path == healthPath:
-        response = healthResponse(200)
+        response = buildResponse(200)
     elif httpMethod == getMethod and path == rekogPath:
         response = rekogResponse(200)
     elif httpMethod == getMethod and path == comprehendPath:
