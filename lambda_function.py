@@ -1,6 +1,7 @@
 import logging
 import json
 import boto3
+import traceback
 from customEncoder import CustomEncoder
 
 logger = logging.getLogger()
@@ -21,22 +22,27 @@ healthPath = dataPath + "/health"
 
 #main handler
 def lambda_handler(event, context):
-    logger.info(event)
-    httpMethod = event['httpMethod']
-    path = event['path']
+    try:
+        logger.info(event)
+        httpMethod = event['httpMethod']
+        path = event['path']
 
-    if httpMethod == getMethod and path == healthPath:
-        response = healthResponse(200)
-    elif httpMethod == getMethod and path == rekogPath:
-        response = rekogResponse(200)
-    elif httpMethod == getMethod and path == comprehendPath:
-        response = comprehendResponse(200)
-    elif httpMethod == getMethod and path == transcribePath:
-        response = transcribeResponse(200) 
-    else:
-        response = buildResponse(404, 'Not Found')
+        if httpMethod == getMethod and path == healthPath:
+            response = healthResponse(200)
+        elif httpMethod == getMethod and path == rekogPath:
+            response = rekogResponse(200)
+        elif httpMethod == getMethod and path == comprehendPath:
+            response = comprehendResponse(200)
+        elif httpMethod == getMethod and path == transcribePath:
+            response = transcribeResponse(200) 
+        else:
+            response = buildResponse(404, 'Not Found')
     
-    return response
+        return response
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        traceback.print_exc()
+        return buildResponse(500, 'Internal Server Error')
 
 # Response builder.
 def buildResponse(statusCode, body = None):
