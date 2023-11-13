@@ -97,12 +97,9 @@ def healthResponse(statusCode, body=None):
     item_id = "health"
 
     try:
-        update_response = table.update_item(
+        update_response = table.put_item(
             TableName=dynamoName,
-            Key={'id': item_id},
-            UpdateExpression='SET clicks = clicks + :val',
-            ExpressionAttributeValues={':val': 1},
-            ReturnValues='UPDATED_NEW'
+            Item={'id': item_id, 'clicks': 1}
         )
 
         response = {
