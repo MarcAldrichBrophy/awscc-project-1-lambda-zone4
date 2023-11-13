@@ -17,7 +17,7 @@ postMethod = "POST"
 dataPath = "/data"
 rekogPath = "/rekognition"
 comprehendPath = "/comprehend"
-transcribePath = "/transcribe"
+transcribePath = "/transcribe/health"
 healthPath = dataPath + "/health"
 
 #main handler
