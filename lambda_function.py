@@ -93,35 +93,39 @@ def transcribeResponse(statusCode, body = None):
         response['body'] = json.dumps(body, cls = CustomEncoder)
     return response
 
-def healthResponse(statusCode, body = None):
+def healthResponse(statusCode, body=None):
     item_id = "health"
 
-    dynamo_response = table.get_item(Key={'id': item_id})
-    current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
+    try:
+        dynamo_response = table.get_item(Key={'id': item_id})
+        current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
 
-    new_clicks = current_clicks+1
+        new_clicks = current_clicks + 1
+        update_response = table.update_item(
+            TableName=dynamoName, 
+            Key={'id': item_id},
+            UpdateExpression='SET clicks = :val',
+            ExpressionAttributeValues={':val': new_clicks},
+            ReturnValues='UPDATED_NEW'
+        )
 
-    update_response = table.update_item(
-        Key={'id': item_id},
-        UpdateExpression='SET clicks = clicks + :val',
-        ExpressionAttributeValues={':val': new_clicks},
-        ReturnValues='UPDATED_NEW'
-    )
-
-    response = {
-        'statusCode': statusCode,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        response = {
+            'statusCode': statusCode,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
         }
-    }
 
-    if body is not None:
-        response['body'] = json.dumps(body, cls=CustomEncoder)
+        if body is not None:
+            response['body'] = json.dumps(body, cls=CustomEncoder)
 
-    return response
+        return response
 
-
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        traceback.print_exc()
+        return buildResponse(500, 'Internal Server Error')
 
 
 
