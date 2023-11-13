@@ -15,9 +15,9 @@ getMethod = "GET"
 postMethod = "POST"
 
 dataPath = "/data"
-rekogPath = "/rekognition"
-comprehendPath = "/comprehend"
-transcribePath = "/transcribe/health"
+rekogPath = dataPath + "/rekognition"
+comprehendPath = dataPath + "/comprehend"
+transcribePath = dataPath + "/transcribe"
 healthPath = dataPath + "/health"
 
 #main handler
@@ -58,19 +58,6 @@ def buildResponse(statusCode, body = None):
     return response
 
 def rekogResponse(statusCode, body = None):
-    item_id = "rekognition"
-
-    dynamo_response = table.get_item(Key ={'id':item_id})
-    current_clicks = dynamo_response.get('Item', {}).get('clicks',0)
-
-    new_clicks = current_clicks + 1
-
-    
-    update_response = table.put_item(
-        TableName=dynamoName,
-        Item={'id': item_id, 'clicks': new_clicks}
-    )
-
     response = {
         'statusCode': statusCode,
         'headers': {
@@ -83,19 +70,6 @@ def rekogResponse(statusCode, body = None):
     return response
 
 def comprehendResponse(statusCode, body = None):
-    item_id = "comprehend"
-
-    dynamo_response = table.get_item(Key ={'id':item_id})
-    current_clicks = dynamo_response.get('Item', {}).get('clicks',0)
-
-    new_clicks = current_clicks + 1
-
-    
-    update_response = table.put_item(
-        TableName=dynamoName,
-        Item={'id': item_id, 'clicks': new_clicks}
-    )
-
     response = {
         'statusCode': statusCode,
         'headers': {
@@ -115,23 +89,29 @@ def transcribeResponse(statusCode, body = None):
 
     new_clicks = current_clicks + 1
 
-    
-    update_response = table.put_item(
-        TableName=dynamoName,
-        Item={'id': item_id, 'clicks': new_clicks}
-    )
+    try:
+        update_response = table.put_item(
+            TableName=dynamoName,
+            Item={'id': item_id, 'clicks': new_clicks}
+        )
 
-    response = {
-        'statusCode': statusCode,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        response = {
+            'statusCode': statusCode,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
         }
-    }
 
-    if body is not None:
-        response['body'] = json.dumps(body, cls = CustomEncoder)
-    return response
+        if body is not None:
+            response['body'] = json.dumps(body, cls=CustomEncoder)
+
+        return response
+
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        traceback.print_exc()
+        return buildResponse(500, f'Internal Server Error: {str(e)}')
 
 def healthResponse(statusCode, body=None):
     item_id = "health"
@@ -141,21 +121,26 @@ def healthResponse(statusCode, body=None):
 
     new_clicks = current_clicks + 1
 
-    
-    update_response = table.put_item(
-        TableName=dynamoName,
-        Item={'id': item_id, 'clicks': new_clicks}
-    )
+    try:
+        update_response = table.put_item(
+            TableName=dynamoName,
+            Item={'id': item_id, 'clicks': new_clicks}
+        )
 
-    response = {
-        'statusCode': statusCode,
-        'headers': {
-            'Content-Type': 'application/json',
-            'Access-Control-Allow-Origin': '*'
+        response = {
+            'statusCode': statusCode,
+            'headers': {
+                'Content-Type': 'application/json',
+                'Access-Control-Allow-Origin': '*'
+            }
         }
-    }
 
-    if body is not None:
-        response['body'] = json.dumps(body, cls=CustomEncoder)
+        if body is not None:
+            response['body'] = json.dumps(body, cls=CustomEncoder)
 
-    return response
+        return response
+
+    except Exception as e:
+        logger.error(f"An error occurred: {str(e)}")
+        traceback.print_exc()
+        return buildResponse(500, f'Internal Server Error: {str(e)}')
