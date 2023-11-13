@@ -97,15 +97,11 @@ def healthResponse(statusCode, body=None):
     item_id = "health"
 
     try:
-        dynamo_response = table.get_item(Key={'id': item_id})
-        current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
-
-        new_clicks = current_clicks + 1
         update_response = table.update_item(
-            TableName=dynamoName, 
+            TableName=dynamoName,
             Key={'id': item_id},
-            UpdateExpression='SET clicks = :val',
-            ExpressionAttributeValues={':val': new_clicks},
+            UpdateExpression='SET clicks = clicks + :val',
+            ExpressionAttributeValues={':val': 1},
             ReturnValues='UPDATED_NEW'
         )
 
@@ -126,6 +122,3 @@ def healthResponse(statusCode, body=None):
         logger.error(f"An error occurred: {str(e)}")
         traceback.print_exc()
         return buildResponse(500, f'Internal Server Error: {str(e)}')
-
-
-
