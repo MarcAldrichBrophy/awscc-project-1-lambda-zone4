@@ -26,7 +26,7 @@ def lambda_handler(event, context):
     path = event['path']
 
     if httpMethod == getMethod and path == healthPath:
-        response = buildResponse(200)
+        response = healthResponse(200)
     elif httpMethod == getMethod and path == rekogPath:
         response = rekogResponse(200)
     elif httpMethod == getMethod and path == comprehendPath:
@@ -88,6 +88,14 @@ def transcribeResponse(statusCode, body = None):
     return response
 
 def healthResponse(statusCode, body = None):
+    item_id = "health"
+    response = table.update_item(
+        Key={'id': item_id},
+        UpdateExpression='SET clicks = clicks + :val',
+        ExpressionAttributeValues={':val': clicks},
+        ReturnValues='UPDATED_NEW'
+    )
+
     response = {
         'statusCode': statusCode,
         'headers': {
