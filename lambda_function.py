@@ -125,7 +125,7 @@ def healthResponse(statusCode, body=None):
     except Exception as e:
         logger.error(f"An error occurred: {str(e)}")
         traceback.print_exc()
-        return buildResponse(500, 'Internal Server Error')
+        return buildResponse(500, f'Internal Server Error: {str(e)}')
 
 
 
