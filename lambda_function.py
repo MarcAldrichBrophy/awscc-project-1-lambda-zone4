@@ -89,10 +89,16 @@ def transcribeResponse(statusCode, body = None):
 
 def healthResponse(statusCode, body = None):
     item_id = "health"
+
+    response = table.get_item(Key={'id': item_id})
+    current_clicks = response.get('Item', {}).get('clicks', 0)
+
+    new_clicks = current_clicks + 1
+
     response = table.update_item(
         Key={'id': item_id},
         UpdateExpression='SET clicks = clicks + :val',
-        ExpressionAttributeValues={':val': clicks},
+        ExpressionAttributeValues={':val': new_clicks},
         ReturnValues='UPDATED_NEW'
     )
 
