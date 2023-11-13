@@ -15,9 +15,9 @@ getMethod = "GET"
 postMethod = "POST"
 
 dataPath = "/data"
-rekogPath = dataPath + "/rekognition"
-comprehendPath = dataPath + "/comprehend"
-transcribePath = dataPath + "/transcribe"
+rekogPath = "/rekognition"
+comprehendPath = "/comprehend"
+transcribePath = "/transcribe"
 healthPath = dataPath + "/health"
 
 #main handler
