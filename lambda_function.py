@@ -90,12 +90,12 @@ def transcribeResponse(statusCode, body = None):
 def healthResponse(statusCode, body = None):
     item_id = "health"
 
-    response = table.get_item(Key={'id': item_id})
-    current_clicks = response.get('Item', {}).get('clicks', 0)
+    dynamo_response = table.get_item(Key={'id': item_id})
+    current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
 
-    new_clicks = current_clicks + 1
+    new_clicks = current_clicks+1
 
-    response = table.update_item(
+    update_response = table.update_item(
         Key={'id': item_id},
         UpdateExpression='SET clicks = clicks + :val',
         ExpressionAttributeValues={':val': new_clicks},
@@ -109,6 +109,13 @@ def healthResponse(statusCode, body = None):
             'Access-Control-Allow-Origin': '*'
         }
     }
+
     if body is not None:
-        response['body'] = json.dumps(body, cls = CustomEncoder)
+        response['body'] = json.dumps(body, cls=CustomEncoder)
+
     return response
+
+
+
+
+
