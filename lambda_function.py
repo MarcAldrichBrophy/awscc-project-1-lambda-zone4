@@ -65,14 +65,15 @@ def rekogResponse(statusCode, body = None):
     return response
 
 def comprehendResponse(statusCode, body=None):
-    item_id = "comprehend"
-
-    dynamo_response = table.get_item(Key={'id': item_id})
-    current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
-
-    new_clicks = current_clicks + 1
-
     try:
+        item_id = "comprehend"
+
+        dynamo_response = table.get_item(Key={'id': item_id})
+        current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
+
+        new_clicks = current_clicks + 1
+
+    
         update_response = table.put_item(
             TableName=dynamoName,
             Item={'id': item_id, 'clicks': new_clicks}
