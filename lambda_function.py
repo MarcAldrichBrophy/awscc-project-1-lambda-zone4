@@ -1,51 +1,67 @@
-import logging
 import json
 import boto3
-import traceback
+from datetime import datetime
 from customEncoder import CustomEncoder
+import os
 
-logger = logging.getLogger()
-logger.setLevel(logging.INFO)
-
-dynamoName = "extracta-data"
-dynamodb = boto3.resource('dynamodb')
-table = dynamodb.Table(dynamoName)
+s3_bucket_name = 'project-1-datalake'
+s3_client = boto3.client('s3')
 
 getMethod = "GET"
-postMethod = "POST"
 
-dataPath = "/data"
-rekogPath = "/rekognition"
-comprehendPath = "/comprehend"
-transcribePath = "/transcribe"
-healthPath = dataPath + "/health"
+s3Path = "/s3"
+allPath = s3Path + "/all"
+itemPath = s3Path + "/item"
+allHealthPath = allPath + "/health"
 
-#main handler
 def lambda_handler(event, context):
-    try:
-        logger.info(event)
-        httpMethod = event['httpMethod']
-        path = event['path']
+    
+    path = event['path']
+    httpMethod = event['httpMethod']
+    print(path)
+    if path == allHealthPath and httpMethod == getMethod:
+        print("health checking...")
+        return buildResponse(200, "health OK")
+    elif path == allPath and httpMethod == getMethod:
+        try:
+    
+            response = s3_client.list_objects_v2(Bucket=s3_bucket_name)
+    
+            object_info_list = []
+            for obj in response.get('Contents', []):
+                tags = s3_client.get_object_tagging(Bucket=s3_bucket_name, Key=obj['Key']).get('TagSet', [])
+                filename = os.path.basename(obj['Key'])
+                extension = os.path.splitext(filename)[1]
+                object_info = {
+                    'Key': obj.get('Key'),
+                    'Type': extension,
+                    'LastModified': obj.get('LastModified').strftime("%Y-%m-%d %H:%M:%S"),
+                    'Tags': tags,  
+                    'HasTagKey': any(tag['Key'] == 'tag_key' for tag in tags)  
+                }
+    
+                object_info_list.append(object_info)
+    
+            object_info_list.sort(key=lambda x: datetime.strptime(x['LastModified'], "%Y-%m-%d %H:%M:%S"), reverse=True)
+    
+            top_20_objects = object_info_list[:20]
+            
+            return buildResponse(200, json.dumps(top_20_objects, default=str))
+        except Exception as e:
+            raise e
+    elif path == itemPath and httpMethod == getMethod:
+        # add single item get
+        singleItem = event['item']
+        try:
+            s3_item = s3_client.get_object(Bucket=s3_bucket_name, Key=singleItem)
+            
+            content = s3_item['Body'].read()
+            
+            return buildResponse(200, content)
+        except Exception as e:
+            raise e
 
-        if httpMethod == getMethod and path == healthPath:
-            response = healthResponse(200)
-        elif httpMethod == getMethod and path == rekogPath:
-            response = rekogResponse(200)
-        elif httpMethod == getMethod and path == comprehendPath:
-            response = comprehendResponse(200)
-        elif httpMethod == getMethod and path == transcribePath:
-            response = transcribeResponse(200) 
-        else:
-            response = buildResponse(404, 'Not Found')
-
-        return response
-    except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
-        traceback.print_exc()
-        return buildResponse(500, f'Internal Server Error: {str(e)}')
-
-# Response builder.
-def buildResponse(statusCode, body = None):
+def buildResponse(statusCode, body=None):
     response = {
         'statusCode': statusCode,
         'headers': {
@@ -54,135 +70,5 @@ def buildResponse(statusCode, body = None):
         }
     }
     if body is not None:
-        response['body'] = json.dumps(body, cls = CustomEncoder)
+        response['body'] = json.dumps(body, cls=CustomEncoder)
     return response
-
-def rekogResponse(statusCode, body = None):
-    try:
-        item_id = "rekognition"
-
-        dynamo_response = table.get_item(Key={'id': item_id})
-        current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
-
-        new_clicks = current_clicks + 1
-
-    
-        update_response = table.put_item(
-            TableName=dynamoName,
-            Item={'id': item_id, 'clicks': new_clicks}
-        )
-
-        response = {
-            'statusCode': statusCode,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        }
-
-        if body is not None:
-            response['body'] = json.dumps(body, cls=CustomEncoder)
-
-        return response
-
-    except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
-        traceback.print_exc()
-        return buildResponse(500, f'Internal Server Error: {str(e)}')
-
-def comprehendResponse(statusCode, body=None):
-    try:
-        item_id = "comprehend"
-
-        dynamo_response = table.get_item(Key={'id': item_id})
-        current_clicks = dynamo_response.get('Item', {}).get('clicks', 0)
-
-        new_clicks = current_clicks + 1
-
-    
-        update_response = table.put_item(
-            TableName=dynamoName,
-            Item={'id': item_id, 'clicks': new_clicks}
-        )
-
-        response = {
-            'statusCode': statusCode,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        }
-
-        if body is not None:
-            response['body'] = json.dumps(body, cls=CustomEncoder)
-
-        return response
-
-    except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
-        traceback.print_exc()
-        return buildResponse(500, f'Internal Server Error: {str(e)}')
-
-def transcribeResponse(statusCode, body = None):
-    item_id = "transcribe"
-
-    dynamo_response = table.get_item(Key ={'id':item_id})
-    current_clicks = dynamo_response.get('Item', {}).get('clicks',0)
-
-    new_clicks = current_clicks + 1
-
-    try:
-        update_response = table.put_item(
-            TableName=dynamoName,
-            Item={'id': item_id, 'clicks': new_clicks}
-        )
-
-        response = {
-            'statusCode': statusCode,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        }
-
-        if body is not None:
-            response['body'] = json.dumps(body, cls=CustomEncoder)
-
-        return response
-
-    except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
-        traceback.print_exc()
-        return buildResponse(500, f'Internal Server Error: {str(e)}')
-
-def healthResponse(statusCode, body=None):
-    item_id = "health"
-
-    dynamo_response = table.get_item(Key ={'id':item_id})
-    current_clicks = dynamo_response.get('Item', {}).get('clicks',0)
-
-    new_clicks = current_clicks + 1
-
-    try:
-        update_response = table.put_item(
-            TableName=dynamoName,
-            Item={'id': item_id, 'clicks': new_clicks}
-        )
-
-        response = {
-            'statusCode': statusCode,
-            'headers': {
-                'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*'
-            }
-        }
-
-        if body is not None:
-            response['body'] = json.dumps(body, cls=CustomEncoder)
-
-        return response
-
-    except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
-        traceback.print_exc()
-        return buildResponse(500, f'Internal Server Error: {str(e)}')
